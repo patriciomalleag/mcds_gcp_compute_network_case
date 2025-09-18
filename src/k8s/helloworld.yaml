@@ -1,0 +1,51 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: demo
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: helloworld
+  namespace: demo
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: helloworld
+  template:
+    metadata:
+      labels:
+        app: helloworld
+    spec:
+      containers:
+        - name: helloworld
+          image: docker.io/istio/examples-helloworld-v1:1.0
+          ports:
+            - containerPort: 5000
+          readinessProbe:
+            httpGet:
+              path: /hello
+              port: 5000
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /hello
+              port: 5000
+            initialDelaySeconds: 15
+            periodSeconds: 20
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: helloworld
+  namespace: demo
+spec:
+  type: LoadBalancer
+  selector:
+    app: helloworld
+  ports:
+    - name: http
+      port: 80
+      targetPort: 5000
