@@ -15,10 +15,9 @@ gcloud container clusters delete "${CLUSTER_NAME}" --zone "${ZONE}" --quiet || t
 # Bastion
 gcloud compute instances delete "${BASTION_NAME}" --zone "${ZONE}" --quiet || true
 
-# Política de firewall de red
-gcloud compute network-firewall-policies associations delete \
-  --name="${FW_POLICY}-assoc" --firewall-policy="${FW_POLICY}" --global-firewall-policy || true
-gcloud compute network-firewall-policies delete "${FW_POLICY}" --global --quiet || true
+# Firewall rules
+gcloud compute firewall-rules delete "${NETWORK}-gke-nodes-to-master" --quiet || true
+gcloud compute firewall-rules delete "${NETWORK}-gke-master-to-nodes" --quiet || true
 
 # NAT y router
 gcloud compute routers nats delete "${NAT_NAME}" --router "${ROUTER_NAME}" \

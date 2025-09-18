@@ -2,11 +2,10 @@
 set -euo pipefail
 source ./00_env.sh
 
-# Clúster  privado con VPC nativa
+# Clúster privado con VPC nativa
 gcloud container clusters create "${CLUSTER_NAME}" \
   --zone "${ZONE}" \
   --num-nodes "2" \
-  --release-channel "regular" \
   --machine-type "e2-standard-2" \
   --enable-ip-alias \
   --network "${NETWORK}" \
@@ -16,6 +15,5 @@ gcloud container clusters create "${CLUSTER_NAME}" \
   --enable-private-nodes \
   --enable-private-endpoint \
   --master-ipv4-cidr "${MASTER_CIDR}" \
-  --no-enable-master-authorized-networks \
-  --workload-pool="${PROJECT_ID}.svc.id.goog" \
-  --enable-shielded-nodes
+  --enable-master-authorized-networks \
+  --master-authorized-networks "${SUBNET_BASTION_RANGE}"

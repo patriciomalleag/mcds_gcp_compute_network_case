@@ -3,8 +3,8 @@ set -euo pipefail
 
 # Proyecto y ubicación
 export PROJECT_ID="patriciomallea-2503"
-export REGION="southamerica-west1"
-export ZONE="southamerica-west1-c"
+export REGION="us-central1"
+export ZONE="us-central1-a"
 
 # Red
 export NETWORK="pm-vpc-secure"

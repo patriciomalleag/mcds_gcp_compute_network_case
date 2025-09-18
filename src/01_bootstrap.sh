@@ -21,7 +21,7 @@ gcloud compute networks subnets update "${SUBNET_GKE}" \
   --region "${REGION}" --enable-private-ip-google-access
 
 # Reglas de firewall básicas
-# - Interno (ICMP/TCP/UDP) entre subredes
+# - Interno entre subredes
 gcloud compute firewall-rules create "${NETWORK}-allow-internal" \
   --network="${NETWORK}" --allow tcp,udp,icmp \
   --source-ranges="${SUBNET_BASTION_RANGE},${SUBNET_GKE_RANGE}"
@@ -34,6 +34,9 @@ gcloud compute firewall-rules create "${NETWORK}-ssh-bastion" \
 # Service Account del bastion
 gcloud iam service-accounts create "${BASTION_SA}" \
   --display-name="Bastion SA"
+
+# Para propagar, pq me falló la primera vez
+sleep 15
 
 # Permisos mínimos para operar con el clúster
 gcloud projects add-iam-policy-binding "${PROJECT_ID}" \
@@ -48,22 +51,14 @@ gcloud compute routers nats create "${NAT_NAME}" \
   --router-region="${REGION}" --router="${ROUTER_NAME}" \
   --nat-all-subnet-ip-ranges --auto-allocate-nat-external-ips
 
-# Crear política global y asociarla a la VPC
-gcloud compute network-firewall-policies create "${FW_POLICY}" --global
+# Firewall para GKE - Nodos a Control Plane
+gcloud compute firewall-rules create "${NETWORK}-gke-nodes-to-master" \
+  --network="${NETWORK}" --allow tcp:443,tcp:10250 \
+  --source-ranges="${SUBNET_GKE_RANGE}" \
+  --target-tags="gke-node"
 
-gcloud compute network-firewall-policies associations create \
-  --firewall-policy="${FW_POLICY}" --network="${NETWORK}" \
-  --name="${FW_POLICY}-assoc" --global-firewall-policy
-
-# ALLOW al bastion SA
-gcloud compute network-firewall-policies rules create 100 \
-  --firewall-policy="${FW_POLICY}" --direction=EGRESS --action=ALLOW \
-  --dest-ip-ranges="${MASTER_CIDR}" --layer4-configs=all \
-  --target-service-accounts="${BASTION_SA}@${PROJECT_ID}.iam.gserviceaccount.com" \
-  --global-firewall-policy
-
-# DENY a todos los demás
-gcloud compute network-firewall-policies rules create 200 \
-  --firewall-policy="${FW_POLICY}" --direction=EGRESS --action=DENY \
-  --dest-ip-ranges="${MASTER_CIDR}" --layer4-configs=all \
-  --global-firewall-policy
+# Firewall para GKE - Control Plane a Nodos  
+gcloud compute firewall-rules create "${NETWORK}-gke-master-to-nodes" \
+  --network="${NETWORK}" --allow tcp:10250,tcp:443 \
+  --source-ranges="${MASTER_CIDR}" \
+  --target-tags="gke-node"
